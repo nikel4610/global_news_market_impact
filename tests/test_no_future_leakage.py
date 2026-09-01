@@ -1,11 +1,12 @@
 import pytest
 
-from config.schema import (
+from global_news_market_impact.config.schema import (
     ARTICLE_COLUMNS,
     AUDIT_IDENTIFIER_COLUMNS,
     EVENT_COLUMNS,
     EVENT_FEATURE_COLUMNS,
     LABEL_GENERATION_COLUMNS,
+    LABEL_PRICE_AUDIT_COLUMNS,
     NEWS_ONLY_FEATURE_COLUMNS,
     NEWS_SENTIMENT_EVENT_FEATURE_COLUMNS,
     NEWS_SENTIMENT_FEATURE_COLUMNS,
@@ -28,6 +29,7 @@ ALL_COLUMN_GROUPS = (
     SENTIMENT_FEATURE_COLUMNS,
     EVENT_FEATURE_COLUMNS,
     *EXPERIMENT_FEATURE_GROUPS,
+    LABEL_PRICE_AUDIT_COLUMNS,
     LABEL_GENERATION_COLUMNS,
     TARGET_COLUMNS,
     TRAINING_ROW_COLUMNS,
@@ -97,7 +99,11 @@ def test_model_features_exclude_all_source_timestamps(feature_columns: tuple[str
 def test_model_features_exclude_future_prices_and_target(
     feature_columns: tuple[str, ...],
 ) -> None:
-    forbidden_future_columns = {*LABEL_GENERATION_COLUMNS, *TARGET_COLUMNS}
+    forbidden_future_columns = {
+        *LABEL_PRICE_AUDIT_COLUMNS,
+        *LABEL_GENERATION_COLUMNS,
+        *TARGET_COLUMNS,
+    }
 
     assert forbidden_future_columns.isdisjoint(feature_columns)
 
@@ -126,6 +132,7 @@ def test_full_training_row_contains_every_declared_column_group() -> None:
     classified_training_columns = {
         *AUDIT_IDENTIFIER_COLUMNS,
         *NEWS_SENTIMENT_EVENT_FEATURE_COLUMNS,
+        *LABEL_PRICE_AUDIT_COLUMNS,
         *LABEL_GENERATION_COLUMNS,
         *TARGET_COLUMNS,
     }

@@ -3,13 +3,23 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from labels.market_sessions import (
+from global_news_market_impact.labels.market_sessions import (
+    MARKET_CALENDAR_END_DATE,
+    MARKET_CALENDAR_START_DATE,
+    NYSE_CALENDAR,
     AmbiguousCloseBoundaryError,
     LabelSessionSelection,
     select_label_sessions,
 )
 
 EASTERN_TIME = ZoneInfo("America/New_York")
+
+
+def test_market_calendar_has_explicit_mvp_bounds() -> None:
+    assert MARKET_CALENDAR_START_DATE == "2020-01-01"
+    assert MARKET_CALENDAR_END_DATE == "2030-12-31"
+    assert NYSE_CALENDAR.first_session.date().isoformat() == "2020-01-02"
+    assert NYSE_CALENDAR.last_session.date().isoformat() == "2030-12-31"
 
 
 def published_at_et(

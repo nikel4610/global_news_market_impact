@@ -14,8 +14,9 @@ The first implementation should avoid model complexity and focus on:
 
 ## Current Guardrails
 
-- Use only the MVP tickers defined in `src/config/tickers.py`.
-- Use only the MVP event types defined in `src/config/events.py`.
+- Use only the MVP tickers defined in `src/global_news_market_impact/config/tickers.py`.
+- Use only the MVP event types defined in `src/global_news_market_impact/config/events.py`.
+- Keep QQQ and SPY as Nasdaq-100 and S&P 500 comparison benchmarks, not model features.
 - Normalize analysis timestamps to U.S. Eastern Time.
 - Use an exchange calendar for U.S. market holidays and early closes.
 - Compare exact timestamps, not only dates.
@@ -50,7 +51,7 @@ Create the stable MVP constants and column contracts before collecting data.
 
 ### Step 2: Market-session selection
 
-Implement `src/labels/market_sessions.py` with an exchange calendar.
+Implement `src/global_news_market_impact/labels/market_sessions.py` with an exchange calendar.
 
 The first supported cases should be:
 
@@ -76,11 +77,12 @@ Implement label generation only after session selection is covered by tests.
 
 The initial label remains:
 
-- `up`: `first_session_close > previous_close`.
-- `not_up`: `first_session_close <= previous_close`, only after both prices are validated as real,
+- `up`: `first_session_adjusted_close > previous_adjusted_close`.
+- `not_up`: `first_session_adjusted_close <= previous_adjusted_close`, only after both prices are validated as real,
   finite, and strictly positive.
 
 Missing, non-numeric, boolean, non-finite, or non-positive prices must block label generation.
+Keep raw closes for audit and use adjusted closes for label direction. Verify the provider's adjustment method before real-data labeling.
 
 ### Step 4: Leakage-safe joins
 

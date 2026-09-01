@@ -2,10 +2,10 @@
 name = "global-news-market-impact"
 version = "0.1.0"
 description = "MVP research pipeline for testing whether major U.S. technology company news predicts next regular-session stock direction."
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "pandas>=2.2",
-  "pydantic>=2.7",
   "exchange-calendars>=4.5",
 ]
 
@@ -15,6 +15,10 @@ dev = [
   "ruff>=0.5",
 ]
 
+[build-system]
+requires = ["uv_build>=0.12.8,<0.13"]
+build-backend = "uv_build"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
@@ -22,4 +26,3 @@ pythonpath = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-

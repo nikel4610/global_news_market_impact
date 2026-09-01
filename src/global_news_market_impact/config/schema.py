@@ -85,9 +85,14 @@ NEWS_SENTIMENT_EVENT_FEATURE_COLUMNS: tuple[str, ...] = (
     NEWS_SENTIMENT_FEATURE_COLUMNS + EVENT_FEATURE_COLUMNS
 )
 
-LABEL_GENERATION_COLUMNS: tuple[str, ...] = (
+LABEL_PRICE_AUDIT_COLUMNS: tuple[str, ...] = (
     "previous_close",
     "first_session_close",
+)
+
+LABEL_GENERATION_COLUMNS: tuple[str, ...] = (
+    "previous_adjusted_close",
+    "first_session_adjusted_close",
 )
 
 TARGET_COLUMNS: tuple[str, ...] = ("label",)
@@ -112,5 +117,7 @@ TRAINING_ROW_COLUMNS: tuple[str, ...] = (
     "first_regular_session_date",
     "previous_close",
     "first_session_close",
+    "previous_adjusted_close",
+    "first_session_adjusted_close",
     "label",
 )

@@ -9,7 +9,13 @@ from zoneinfo import ZoneInfo
 import exchange_calendars as xcals
 
 EASTERN_TIME = ZoneInfo("America/New_York")
-NYSE_CALENDAR = xcals.get_calendar("XNYS")
+MARKET_CALENDAR_START_DATE = "2020-01-01"
+MARKET_CALENDAR_END_DATE = "2030-12-31"
+NYSE_CALENDAR = xcals.get_calendar(
+    "XNYS",
+    start=MARKET_CALENDAR_START_DATE,
+    end=MARKET_CALENDAR_END_DATE,
+)
 # Conservative MVP fallback until each price provider's close availability is known.
 CLOSE_CONFIRMATION_FALLBACK_WINDOW = timedelta(minutes=1)
 

@@ -6,4 +6,3 @@ MVP_EVENT_TYPES: tuple[str, ...] = (
     "CPI",
     "EMPLOYMENT",
 )
-

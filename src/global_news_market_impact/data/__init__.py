@@ -1,2 +1,1 @@
 """Data collection and loading helpers."""
-

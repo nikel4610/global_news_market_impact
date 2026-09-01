@@ -19,16 +19,24 @@ class GeneratedLabel:
     first_regular_session_date: str
     previous_close: float
     first_session_close: float
+    previous_adjusted_close: float
+    first_session_adjusted_close: float
     label: str
 
 
-def classify_up_not_up(previous_close: float, first_session_close: float) -> str:
-    """Return the initial MVP label after validating both close prices."""
-    validated_previous_close = _validate_label_price("previous_close", previous_close)
-    validated_first_session_close = _validate_label_price(
-        "first_session_close", first_session_close
+def classify_up_not_up(previous_adjusted_close: float, first_session_adjusted_close: float) -> str:
+    """Return the initial MVP label after validating both adjusted closes."""
+    validated_previous_adjusted_close = _validate_label_price(
+        "previous_adjusted_close", previous_adjusted_close
     )
-    return "up" if validated_first_session_close > validated_previous_close else "not_up"
+    validated_first_session_adjusted_close = _validate_label_price(
+        "first_session_adjusted_close", first_session_adjusted_close
+    )
+    return (
+        "up"
+        if validated_first_session_adjusted_close > validated_previous_adjusted_close
+        else "not_up"
+    )
 
 
 def _validate_label_price(field_name: str, value: object) -> float:
