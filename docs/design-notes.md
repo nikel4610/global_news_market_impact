@@ -31,10 +31,13 @@ Completed:
 - A conservative one-minute ambiguous close-boundary rejection rule.
 - Basic validation that both label prices are real, finite, and strictly positive.
 - Schema contract tests that separate audit, feature, label-generation, and target columns.
+- Fixture-based price-row validation and selection for the article ticker, QQQ, and SPY.
+- End-to-end adjusted-close label generation with structured exclusion reasons.
 
 Not implemented:
 
-- Actual price-row lookup and end-to-end label generation.
+- Real-provider price ingestion, batch label output, and exclusion-reason aggregation.
+- Stock, QQQ, and SPY returns and benchmark-relative excess returns.
 - Runtime timestamp normalization and availability-safe joins.
 - News, price, sentiment, and event provider feasibility validation or collection.
 - Model training, time-based evaluation, and experiment reporting.
@@ -83,6 +86,8 @@ The initial label remains:
 
 Missing, non-numeric, boolean, non-finite, or non-positive prices must block label generation.
 Keep raw closes for audit and use adjusted closes for label direction. Verify the provider's adjustment method before real-data labeling.
+
+The fixture pipeline validates the minimum price contract, rejects duplicate ticker/date rows, selects the article and QQQ/SPY price pairs for the two sessions, and returns either a successful label bundle or a structured exclusion result.
 
 ### Step 4: Leakage-safe joins
 

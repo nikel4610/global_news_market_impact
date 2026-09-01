@@ -1,9 +1,9 @@
 import pandas as pd
 import pytest
 
-from global_news_market_impact.labels.generate_labels import (
+from global_news_market_impact.labels.generate_labels import classify_up_not_up
+from global_news_market_impact.labels.price_validation import (
     InvalidLabelPriceError,
-    classify_up_not_up,
 )
 
 INVALID_PRICES = [
