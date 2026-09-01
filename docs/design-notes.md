@@ -33,11 +33,12 @@ Completed:
 - Schema contract tests that separate audit, feature, label-generation, and target columns.
 - Fixture-based price-row validation and selection for the article ticker, QQQ, and SPY.
 - End-to-end adjusted-close label generation with structured exclusion reasons.
+- One-session simple returns for the stock, QQQ, and SPY, plus separate excess returns versus each benchmark.
+- Schema guards that keep all return and excess-return evaluation fields out of model features.
 
 Not implemented:
 
 - Real-provider price ingestion, batch label output, and exclusion-reason aggregation.
-- Stock, QQQ, and SPY returns and benchmark-relative excess returns.
 - Runtime timestamp normalization and availability-safe joins.
 - News, price, sentiment, and event provider feasibility validation or collection.
 - Model training, time-based evaluation, and experiment reporting.
@@ -88,6 +89,8 @@ Missing, non-numeric, boolean, non-finite, or non-positive prices must block lab
 Keep raw closes for audit and use adjusted closes for label direction. Verify the provider's adjustment method before real-data labeling.
 
 The fixture pipeline validates the minimum price contract, rejects duplicate ticker/date rows, selects the article and QQQ/SPY price pairs for the two sessions, and returns either a successful label bundle or a structured exclusion result.
+
+Return evaluation uses adjusted-close simple returns. It preserves stock-minus-QQQ and stock-minus-SPY results separately and does not change the initial binary target.
 
 ### Step 4: Leakage-safe joins
 

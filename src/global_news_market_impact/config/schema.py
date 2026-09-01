@@ -95,6 +95,14 @@ LABEL_GENERATION_COLUMNS: tuple[str, ...] = (
     "first_session_adjusted_close",
 )
 
+RETURN_EVALUATION_COLUMNS: tuple[str, ...] = (
+    "stock_return",
+    "qqq_return",
+    "spy_return",
+    "excess_return_vs_qqq",
+    "excess_return_vs_spy",
+)
+
 TARGET_COLUMNS: tuple[str, ...] = ("label",)
 
 # Complete persisted and auditable row schema. Never pass this tuple directly to a model.
@@ -119,5 +127,10 @@ TRAINING_ROW_COLUMNS: tuple[str, ...] = (
     "first_session_close",
     "previous_adjusted_close",
     "first_session_adjusted_close",
+    "stock_return",
+    "qqq_return",
+    "spy_return",
+    "excess_return_vs_qqq",
+    "excess_return_vs_spy",
     "label",
 )

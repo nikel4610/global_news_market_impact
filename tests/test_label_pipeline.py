@@ -71,6 +71,11 @@ def test_generate_article_label_uses_adjusted_closes_and_preserves_raw_closes() 
     assert tuple(pair.ticker for pair in outcome.benchmark_price_pairs) == ("QQQ", "SPY")
     assert outcome.benchmark_price_pairs[0].first_session.adjusted_close == 505.0
     assert outcome.benchmark_price_pairs[1].first_session.adjusted_close == 603.0
+    assert outcome.return_metrics.stock_return == pytest.approx(0.01)
+    assert outcome.return_metrics.qqq_return == pytest.approx(0.01)
+    assert outcome.return_metrics.spy_return == pytest.approx(0.005)
+    assert outcome.return_metrics.excess_return_vs_qqq == pytest.approx(0.0)
+    assert outcome.return_metrics.excess_return_vs_spy == pytest.approx(0.005)
 
 
 @pytest.mark.parametrize(

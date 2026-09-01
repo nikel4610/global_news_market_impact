@@ -11,6 +11,7 @@ from global_news_market_impact.config.schema import (
     NEWS_SENTIMENT_EVENT_FEATURE_COLUMNS,
     NEWS_SENTIMENT_FEATURE_COLUMNS,
     NEWS_TEXT_FEATURE_COLUMNS,
+    RETURN_EVALUATION_COLUMNS,
     SENTIMENT_COLUMNS,
     SENTIMENT_FEATURE_COLUMNS,
     TARGET_COLUMNS,
@@ -31,6 +32,7 @@ ALL_COLUMN_GROUPS = (
     *EXPERIMENT_FEATURE_GROUPS,
     LABEL_PRICE_AUDIT_COLUMNS,
     LABEL_GENERATION_COLUMNS,
+    RETURN_EVALUATION_COLUMNS,
     TARGET_COLUMNS,
     TRAINING_ROW_COLUMNS,
 )
@@ -102,6 +104,7 @@ def test_model_features_exclude_future_prices_and_target(
     forbidden_future_columns = {
         *LABEL_PRICE_AUDIT_COLUMNS,
         *LABEL_GENERATION_COLUMNS,
+        *RETURN_EVALUATION_COLUMNS,
         *TARGET_COLUMNS,
     }
 
@@ -134,6 +137,7 @@ def test_full_training_row_contains_every_declared_column_group() -> None:
         *NEWS_SENTIMENT_EVENT_FEATURE_COLUMNS,
         *LABEL_PRICE_AUDIT_COLUMNS,
         *LABEL_GENERATION_COLUMNS,
+        *RETURN_EVALUATION_COLUMNS,
         *TARGET_COLUMNS,
     }
 

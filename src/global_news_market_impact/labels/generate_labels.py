@@ -9,6 +9,11 @@ from enum import StrEnum
 import pandas as pd
 
 from global_news_market_impact.config.tickers import MARKET_BENCHMARK_TICKERS, MVP_TICKERS
+from global_news_market_impact.evaluation.returns import (
+    ReturnCalculationError,
+    ReturnMetrics,
+    calculate_return_metrics,
+)
 from global_news_market_impact.labels.market_sessions import (
     AmbiguousCloseBoundaryError,
     select_label_sessions,
@@ -19,7 +24,10 @@ from global_news_market_impact.labels.price_rows import (
     PriceRowSelectionError,
     select_price_pair,
 )
-from global_news_market_impact.labels.price_validation import validate_positive_price
+from global_news_market_impact.labels.price_validation import (
+    InvalidLabelPriceError,
+    validate_positive_price,
+)
 
 
 @dataclass(frozen=True)
@@ -41,6 +49,7 @@ class ArticleLabelSuccess:
     ticker: str
     generated_label: GeneratedLabel
     benchmark_price_pairs: tuple[PricePair, ...]
+    return_metrics: ReturnMetrics
 
 
 class LabelExclusionReason(StrEnum):
@@ -54,6 +63,7 @@ class LabelExclusionReason(StrEnum):
     MISSING_SPY_PRICE = "MISSING_SPY_PRICE"
     DUPLICATE_PRICE_ROW = "DUPLICATE_PRICE_ROW"
     INVALID_PRICE_ROW = "INVALID_PRICE_ROW"
+    INVALID_RETURN_DATA = "INVALID_RETURN_DATA"
 
 
 @dataclass(frozen=True)
@@ -155,11 +165,27 @@ def generate_article_label(
             first_session_adjusted_close=stock_price_pair.first_session.adjusted_close,
         ),
     )
+    try:
+        return_metrics = calculate_return_metrics(
+            stock_price_pair=stock_price_pair,
+            benchmark_price_pairs=benchmark_price_pairs,
+        )
+    except (InvalidLabelPriceError, ReturnCalculationError) as error:
+        return ArticleLabelExclusion(
+            article_id=article_id,
+            ticker=normalized_ticker,
+            reason=LabelExclusionReason.INVALID_RETURN_DATA,
+            detail=str(error),
+            previous_confirmed_close_date=session_selection.previous_confirmed_close_date,
+            first_regular_session_date=session_selection.first_regular_session_date,
+        )
+
     return ArticleLabelSuccess(
         article_id=article_id,
         ticker=normalized_ticker,
         generated_label=generated_label,
         benchmark_price_pairs=benchmark_price_pairs,
+        return_metrics=return_metrics,
     )
 
 

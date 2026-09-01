@@ -31,6 +31,8 @@ Use `QQQ` as the Nasdaq-100 ETF benchmark and `SPY` as the S&P 500 ETF benchmark
 
 Keep raw `close` values for audit. Use `adjusted_close` for price-direction labels and later benchmark-relative return calculations so stock splits and distributions do not create false price moves. Confirm the selected provider's adjustment method before using real data.
 
+Use one-session simple returns for the stock, QQQ, and SPY. Keep stock-minus-QQQ and stock-minus-SPY excess returns as separate evaluation fields. Do not use these future-return values as model features or replace the initial `up` / `not_up` target without explicit approval.
+
 ## Data Inputs
 
 The MVP should use:
