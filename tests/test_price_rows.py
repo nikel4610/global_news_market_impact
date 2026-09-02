@@ -1,11 +1,14 @@
-from datetime import date, datetime
+from datetime import UTC, date, datetime
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import pytest
 
 from global_news_market_impact.labels.price_rows import (
+    PreparedPriceTable,
     PriceRowErrorReason,
     PriceRowSelectionError,
+    prepare_price_rows,
     select_price_pair,
 )
 
@@ -76,11 +79,84 @@ def test_price_rows_reject_duplicate_ticker_and_date() -> None:
     assert error_info.value.trading_date == "2025-06-17"
 
 
+def test_unrelated_duplicate_does_not_block_requested_price_pair() -> None:
+    unrelated_duplicates = pd.DataFrame(
+        [
+            {
+                "ticker": "AMD",
+                "trading_date": "2025-06-17",
+                "close": 10.0,
+                "adjusted_close": 10.0,
+            },
+            {
+                "ticker": "AMD",
+                "trading_date": "2025-06-17",
+                "close": 10.0,
+                "adjusted_close": 10.0,
+            },
+        ]
+    )
+    price_rows = pd.concat([make_price_rows(), unrelated_duplicates], ignore_index=True)
+
+    pair = select_price_pair(
+        price_rows,
+        ticker="NVDA",
+        previous_confirmed_close_date="2025-06-17",
+        first_regular_session_date="2025-06-18",
+    )
+
+    assert pair.ticker == "NVDA"
+
+
+def test_prepared_price_table_can_be_reused_for_multiple_lookups() -> None:
+    prepared_price_table = prepare_price_rows(make_price_rows())
+
+    assert isinstance(prepared_price_table, PreparedPriceTable)
+    first_pair = select_price_pair(
+        prepared_price_table,
+        ticker="NVDA",
+        previous_confirmed_close_date="2025-06-17",
+        first_regular_session_date="2025-06-18",
+    )
+    second_pair = select_price_pair(
+        prepared_price_table,
+        ticker="NVDA",
+        previous_confirmed_close_date="2025-06-17",
+        first_regular_session_date="2025-06-18",
+    )
+
+    assert first_pair == second_pair
+
+
 def test_price_rows_reject_non_midnight_datetime() -> None:
     price_rows = make_price_rows()
     price_rows.loc[0, "trading_date"] = datetime(2025, 6, 17, 12)  # noqa: DTZ001
 
     with pytest.raises(PriceRowSelectionError) as error_info:
+        select_price_pair(
+            price_rows,
+            ticker="NVDA",
+            previous_confirmed_close_date="2025-06-17",
+            first_regular_session_date="2025-06-18",
+        )
+
+    assert error_info.value.reason == PriceRowErrorReason.INVALID_TRADING_DATE
+
+
+@pytest.mark.parametrize(
+    "aware_datetime",
+    [
+        datetime(2025, 6, 17, tzinfo=UTC),
+        datetime(2025, 6, 17, tzinfo=ZoneInfo("America/New_York")),
+    ],
+)
+def test_price_rows_reject_timezone_aware_trading_date(
+    aware_datetime: datetime,
+) -> None:
+    price_rows = make_price_rows()
+    price_rows.loc[0, "trading_date"] = aware_datetime
+
+    with pytest.raises(PriceRowSelectionError, match="timezone-naive") as error_info:
         select_price_pair(
             price_rows,
             ticker="NVDA",

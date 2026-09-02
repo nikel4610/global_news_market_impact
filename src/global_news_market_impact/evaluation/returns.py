@@ -65,6 +65,11 @@ def calculate_return_metrics(
             f"unexpected benchmark price pairs: {', '.join(unexpected_benchmarks)}"
         )
 
+    _validate_benchmark_dates(
+        stock_price_pair=stock_price_pair,
+        benchmark_pairs_by_ticker=benchmark_pairs_by_ticker,
+    )
+
     stock_return = calculate_simple_return(stock_price_pair)
     qqq_return = calculate_simple_return(benchmark_pairs_by_ticker["QQQ"])
     spy_return = calculate_simple_return(benchmark_pairs_by_ticker["SPY"])
@@ -75,3 +80,27 @@ def calculate_return_metrics(
         excess_return_vs_qqq=stock_return - qqq_return,
         excess_return_vs_spy=stock_return - spy_return,
     )
+
+
+def _validate_benchmark_dates(
+    *,
+    stock_price_pair: PricePair,
+    benchmark_pairs_by_ticker: dict[str, PricePair],
+) -> None:
+    expected_dates = {
+        "previous": stock_price_pair.previous.trading_date,
+        "first_session": stock_price_pair.first_session.trading_date,
+    }
+    for benchmark_ticker in MARKET_BENCHMARK_TICKERS:
+        benchmark_pair = benchmark_pairs_by_ticker[benchmark_ticker]
+        actual_dates = {
+            "previous": benchmark_pair.previous.trading_date,
+            "first_session": benchmark_pair.first_session.trading_date,
+        }
+        for session_name, expected_date in expected_dates.items():
+            actual_date = actual_dates[session_name]
+            if actual_date != expected_date:
+                raise ReturnCalculationError(
+                    f"{benchmark_ticker} {session_name} trading date mismatch: "
+                    f"expected {expected_date}, got {actual_date}"
+                )

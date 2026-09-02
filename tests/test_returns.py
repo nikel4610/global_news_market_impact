@@ -13,16 +13,19 @@ def make_price_pair(
     ticker: str,
     previous_adjusted_close: float,
     first_adjusted_close: float,
+    *,
+    previous_date: str = "2025-06-17",
+    first_date: str = "2025-06-18",
 ) -> PricePair:
     return PricePair(
         ticker=ticker,
         previous=PriceObservation(
-            trading_date="2025-06-17",
+            trading_date=previous_date,
             close=previous_adjusted_close,
             adjusted_close=previous_adjusted_close,
         ),
         first_session=PriceObservation(
-            trading_date="2025-06-18",
+            trading_date=first_date,
             close=first_adjusted_close,
             adjusted_close=first_adjusted_close,
         ),
@@ -95,4 +98,44 @@ def test_return_metrics_reject_duplicate_benchmark() -> None:
                 make_price_pair("QQQ", 100.0, 102.0),
                 make_price_pair("SPY", 100.0, 101.0),
             ),
+        )
+
+
+@pytest.mark.parametrize(
+    ("benchmark_ticker", "session_name", "previous_date", "first_date"),
+    [
+        ("QQQ", "previous", "2025-06-16", "2025-06-18"),
+        ("QQQ", "first_session", "2025-06-17", "2025-06-19"),
+        ("SPY", "previous", "2025-06-16", "2025-06-18"),
+        ("SPY", "first_session", "2025-06-17", "2025-06-19"),
+    ],
+)
+def test_return_metrics_reject_misaligned_benchmark_dates(
+    benchmark_ticker: str,
+    session_name: str,
+    previous_date: str,
+    first_date: str,
+) -> None:
+    benchmark_pairs = {
+        "QQQ": make_price_pair("QQQ", 100.0, 101.0),
+        "SPY": make_price_pair("SPY", 100.0, 101.0),
+    }
+    benchmark_pairs[benchmark_ticker] = make_price_pair(
+        benchmark_ticker,
+        100.0,
+        101.0,
+        previous_date=previous_date,
+        first_date=first_date,
+    )
+
+    with pytest.raises(
+        ReturnCalculationError,
+        match=(
+            rf"{benchmark_ticker} {session_name} trading date mismatch: "
+            rf"expected 2025-06-(17|18), got 2025-06-(16|19)"
+        ),
+    ):
+        calculate_return_metrics(
+            stock_price_pair=make_price_pair("NVDA", 100.0, 101.0),
+            benchmark_price_pairs=tuple(benchmark_pairs.values()),
         )

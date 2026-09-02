@@ -61,15 +61,30 @@ class PricePair:
     first_session: PriceObservation
 
 
+@dataclass(frozen=True)
+class PreparedPriceTable:
+    """Normalized daily prices reusable across article and benchmark lookups."""
+
+    rows: pd.DataFrame
+
+
+def prepare_price_rows(price_rows: pd.DataFrame) -> PreparedPriceTable:
+    """Validate the table contract and normalize ticker/date columns once."""
+    return PreparedPriceTable(rows=_normalize_price_rows(price_rows))
+
+
 def select_price_pair(
-    price_rows: pd.DataFrame,
+    price_rows: pd.DataFrame | PreparedPriceTable,
     *,
     ticker: str,
     previous_confirmed_close_date: str,
     first_regular_session_date: str,
 ) -> PricePair:
     """Select one validated price row for each label session."""
-    normalized_rows = _normalize_price_rows(price_rows)
+    prepared_price_table = (
+        price_rows if isinstance(price_rows, PreparedPriceTable) else prepare_price_rows(price_rows)
+    )
+    normalized_rows = prepared_price_table.rows
     normalized_ticker = _normalize_ticker(ticker)
     previous_date = _normalize_target_date(previous_confirmed_close_date)
     first_date = _normalize_target_date(first_regular_session_date)
@@ -111,18 +126,6 @@ def _normalize_price_rows(price_rows: pd.DataFrame) -> pd.DataFrame:
     normalized_rows["ticker"] = normalized_rows["ticker"].map(_normalize_ticker)
     normalized_rows["trading_date"] = normalized_rows["trading_date"].map(_normalize_trading_date)
 
-    duplicate_mask = normalized_rows.duplicated(subset=["ticker", "trading_date"], keep=False)
-    if duplicate_mask.any():
-        duplicate_row = normalized_rows.loc[duplicate_mask].iloc[0]
-        duplicate_date = duplicate_row["trading_date"].isoformat()
-        duplicate_ticker = str(duplicate_row["ticker"])
-        raise PriceRowSelectionError(
-            PriceRowErrorReason.DUPLICATE_PRICE_ROW,
-            f"duplicate price row for {duplicate_ticker} on {duplicate_date}",
-            ticker=duplicate_ticker,
-            trading_date=duplicate_date,
-        )
-
     return normalized_rows
 
 
@@ -140,6 +143,11 @@ def _normalize_trading_date(value: object) -> date:
         value = value.to_pydatetime()
 
     if isinstance(value, datetime):
+        if value.tzinfo is not None and value.utcoffset() is not None:
+            raise PriceRowSelectionError(
+                PriceRowErrorReason.INVALID_TRADING_DATE,
+                "trading_date datetime must be timezone-naive",
+            )
         if value.timetz().replace(tzinfo=None) != time.min:
             raise PriceRowSelectionError(
                 PriceRowErrorReason.INVALID_TRADING_DATE,
@@ -161,7 +169,7 @@ def _normalize_trading_date(value: object) -> date:
 
     raise PriceRowSelectionError(
         PriceRowErrorReason.INVALID_TRADING_DATE,
-        "trading_date must be an ISO date, date, or midnight datetime",
+        "trading_date must be an ISO date, date, or timezone-naive midnight datetime",
     )
 
 
@@ -191,6 +199,14 @@ def _select_observation(
         raise PriceRowSelectionError(
             missing_reason,
             f"missing {ticker} price row for {trading_date_text}",
+            ticker=ticker,
+            trading_date=trading_date_text,
+        )
+
+    if len(matching_rows) > 1:
+        raise PriceRowSelectionError(
+            PriceRowErrorReason.DUPLICATE_PRICE_ROW,
+            f"duplicate price row for {ticker} on {trading_date_text}",
             ticker=ticker,
             trading_date=trading_date_text,
         )

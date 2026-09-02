@@ -32,8 +32,11 @@ Completed:
 - Basic validation that both label prices are real, finite, and strictly positive.
 - Schema contract tests that separate audit, feature, label-generation, and target columns.
 - Fixture-based price-row validation and selection for the article ticker, QQQ, and SPY.
+- Reusable prepared price tables and key-local duplicate checks so unrelated duplicate rows do not exclude another article.
+- Strict session-date inputs that reject timezone-aware daily-price datetimes instead of truncating them.
 - End-to-end adjusted-close label generation with structured exclusion reasons.
 - One-session simple returns for the stock, QQQ, and SPY, plus separate excess returns versus each benchmark.
+- Trading-date alignment checks across the stock, QQQ, and SPY before return calculation.
 - Schema guards that keep all return and excess-return evaluation fields out of model features.
 
 Not implemented:

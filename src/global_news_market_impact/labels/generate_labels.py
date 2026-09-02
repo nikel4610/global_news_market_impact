@@ -19,9 +19,11 @@ from global_news_market_impact.labels.market_sessions import (
     select_label_sessions,
 )
 from global_news_market_impact.labels.price_rows import (
+    PreparedPriceTable,
     PricePair,
     PriceRowErrorReason,
     PriceRowSelectionError,
+    prepare_price_rows,
     select_price_pair,
 )
 from global_news_market_impact.labels.price_validation import (
@@ -99,7 +101,7 @@ def generate_article_label(
     article_id: str,
     ticker: str,
     published_at_et: datetime,
-    price_rows: pd.DataFrame,
+    price_rows: pd.DataFrame | PreparedPriceTable,
 ) -> ArticleLabelOutcome:
     """Generate one stock label and aligned QQQ/SPY price pairs."""
     normalized_ticker = ticker.strip().upper() if isinstance(ticker, str) else ""
@@ -129,15 +131,20 @@ def generate_article_label(
         )
 
     try:
+        prepared_price_table = (
+            price_rows
+            if isinstance(price_rows, PreparedPriceTable)
+            else prepare_price_rows(price_rows)
+        )
         stock_price_pair = select_price_pair(
-            price_rows,
+            prepared_price_table,
             ticker=normalized_ticker,
             previous_confirmed_close_date=session_selection.previous_confirmed_close_date,
             first_regular_session_date=session_selection.first_regular_session_date,
         )
         benchmark_price_pairs = tuple(
             select_price_pair(
-                price_rows,
+                prepared_price_table,
                 ticker=benchmark_ticker,
                 previous_confirmed_close_date=session_selection.previous_confirmed_close_date,
                 first_regular_session_date=session_selection.first_regular_session_date,

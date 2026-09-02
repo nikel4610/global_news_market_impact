@@ -31,7 +31,13 @@ Use `QQQ` as the Nasdaq-100 ETF benchmark and `SPY` as the S&P 500 ETF benchmark
 
 Keep raw `close` values for audit. Use `adjusted_close` for price-direction labels and later benchmark-relative return calculations so stock splits and distributions do not create false price moves. Confirm the selected provider's adjustment method before using real data.
 
+Normalize a price table once and reuse the prepared result across stock and benchmark lookups. A duplicate should exclude an article only when the requested `(ticker, trading_date)` key is ambiguous; unrelated duplicate keys belong in batch data-quality reporting and must not block another article.
+
+Treat daily `trading_date` as an exchange-session date. Accept dates, ISO date strings, and timezone-naive midnight datetimes; reject timezone-aware datetimes instead of converting or truncating them.
+
 Use one-session simple returns for the stock, QQQ, and SPY. Keep stock-minus-QQQ and stock-minus-SPY excess returns as separate evaluation fields. Do not use these future-return values as model features or replace the initial `up` / `not_up` target without explicit approval.
+
+Calculate benchmark-relative returns only when the stock, QQQ, and SPY price pairs have identical previous and first-session trading dates. Reject mismatched periods instead of shifting benchmark dates automatically.
 
 ## Data Inputs
 

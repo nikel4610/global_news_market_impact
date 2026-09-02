@@ -144,6 +144,35 @@ def test_generate_article_label_records_duplicate_price_row() -> None:
     assert outcome.reason == LabelExclusionReason.DUPLICATE_PRICE_ROW
 
 
+def test_generate_article_label_ignores_unrelated_duplicate_price_row() -> None:
+    unrelated_duplicate = pd.DataFrame(
+        [
+            {
+                "ticker": "AMD",
+                "trading_date": "2025-06-17",
+                "close": 10.0,
+                "adjusted_close": 10.0,
+            },
+            {
+                "ticker": "AMD",
+                "trading_date": "2025-06-17",
+                "close": 10.0,
+                "adjusted_close": 10.0,
+            },
+        ]
+    )
+    price_rows = pd.concat([make_price_rows(), unrelated_duplicate], ignore_index=True)
+
+    outcome = generate_article_label(
+        article_id="article-1",
+        ticker="NVDA",
+        published_at_et=published_at_et(2025, 6, 18, 12),
+        price_rows=price_rows,
+    )
+
+    assert isinstance(outcome, ArticleLabelSuccess)
+
+
 def test_generate_article_label_records_invalid_adjusted_close() -> None:
     price_rows = make_price_rows()
     price_rows.loc[
