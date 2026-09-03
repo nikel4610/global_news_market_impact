@@ -33,6 +33,12 @@ Keep raw `close` values for audit. Use `adjusted_close` for price-direction labe
 
 Normalize a price table once and reuse the prepared result across stock and benchmark lookups. A duplicate should exclude an article only when the requested `(ticker, trading_date)` key is ambiguous; unrelated duplicate keys belong in batch data-quality reporting and must not block another article.
 
+Prepare article rows against the minimum `article_id`, `ticker`, and `published_at_et` contract while preserving input order and additional source columns. Require a non-empty, unique normalized `article_id` because missing or duplicate IDs break traceability. Keep unsupported tickers and invalid publication timestamps as per-article exclusion outcomes instead of failing the whole prepared table.
+
+Structured price exclusions must preserve the affected `price_ticker`, `trading_date`, and, when applicable, `price_field`; do not require downstream reporting to parse these values from a human-readable detail string.
+
+Batch labeling must prepare article and price tables once, preserve a zero-based `input_position`, and return separate success and exclusion tables with stable schemas. Keep source article text in the prepared article table and join it later by `article_id`; do not copy title or summary into label-only output tables.
+
 Treat daily `trading_date` as an exchange-session date. Accept dates, ISO date strings, and timezone-naive midnight datetimes; reject timezone-aware datetimes instead of converting or truncating them.
 
 Use one-session simple returns for the stock, QQQ, and SPY. Keep stock-minus-QQQ and stock-minus-SPY excess returns as separate evaluation fields. Do not use these future-return values as model features or replace the initial `up` / `not_up` target without explicit approval.

@@ -207,4 +207,7 @@ def test_selected_price_row_rejects_invalid_raw_or_adjusted_close(column: str) -
         )
 
     assert error_info.value.reason == PriceRowErrorReason.INVALID_PRICE_ROW
+    assert error_info.value.ticker == "NVDA"
+    assert error_info.value.trading_date == "2025-06-17"
+    assert error_info.value.price_field == column
     assert column in str(error_info.value)

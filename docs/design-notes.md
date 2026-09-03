@@ -27,6 +27,7 @@ The first implementation should avoid model complexity and focus on:
 Completed:
 
 - Source and training-row column contracts, including paired `*_original` and `*_et` timestamps.
+- Minimum article-label input preparation with required columns, non-empty unique IDs, stable input order, and retained extra columns.
 - Market-session selection for pre-market, intraday, after-market, weekend, holiday, and early-close cases.
 - A conservative one-minute ambiguous close-boundary rejection rule.
 - Basic validation that both label prices are real, finite, and strictly positive.
@@ -34,7 +35,8 @@ Completed:
 - Fixture-based price-row validation and selection for the article ticker, QQQ, and SPY.
 - Reusable prepared price tables and key-local duplicate checks so unrelated duplicate rows do not exclude another article.
 - Strict session-date inputs that reject timezone-aware daily-price datetimes instead of truncating them.
-- End-to-end adjusted-close label generation with structured exclusion reasons.
+- End-to-end adjusted-close label generation with structured exclusion reasons and explicit affected ticker, trading date, and price field.
+- Batch label generation with one-time article/price preparation, stable success/exclusion schemas, and zero-based input positions.
 - One-session simple returns for the stock, QQQ, and SPY, plus separate excess returns versus each benchmark.
 - Trading-date alignment checks across the stock, QQQ, and SPY before return calculation.
 - Schema guards that keep all return and excess-return evaluation fields out of model features.
@@ -91,7 +93,11 @@ The initial label remains:
 Missing, non-numeric, boolean, non-finite, or non-positive prices must block label generation.
 Keep raw closes for audit and use adjusted closes for label direction. Verify the provider's adjustment method before real-data labeling.
 
-The fixture pipeline validates the minimum price contract, rejects duplicate ticker/date rows, selects the article and QQQ/SPY price pairs for the two sessions, and returns either a successful label bundle or a structured exclusion result.
+Article preparation validates the minimum `article_id`, `ticker`, and `published_at_et` contract. It rejects missing or duplicate normalized article IDs at table preparation because those errors prevent traceability, while unsupported tickers and invalid publication timestamps remain per-article exclusions. It preserves the original row order and additional source columns for later joins.
+
+The fixture pipeline validates the minimum price contract, rejects duplicate ticker/date rows, selects the article and QQQ/SPY price pairs for the two sessions, and returns either a successful label bundle or a structured exclusion result. Price-related exclusions expose the affected ticker, trading date, and invalid field separately from the human-readable detail.
+
+Batch labeling prepares each source table once and writes successful labels and exclusions to separate stable schemas. Both outputs retain a zero-based input position and `article_id`, so they can be restored to original order or joined to source article text without duplicating text into label-only tables.
 
 Return evaluation uses adjusted-close simple returns. It preserves stock-minus-QQQ and stock-minus-SPY results separately and does not change the initial binary target.
 

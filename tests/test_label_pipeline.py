@@ -104,6 +104,9 @@ def test_generate_article_label_records_missing_stock_session(
     assert outcome.reason == expected_reason
     assert outcome.previous_confirmed_close_date == "2025-06-17"
     assert outcome.first_regular_session_date == "2025-06-18"
+    assert outcome.price_ticker == "NVDA"
+    assert outcome.trading_date == missing_date
+    assert outcome.price_field is None
 
 
 @pytest.mark.parametrize(
@@ -128,6 +131,9 @@ def test_generate_article_label_records_missing_benchmark(
 
     assert isinstance(outcome, ArticleLabelExclusion)
     assert outcome.reason == expected_reason
+    assert outcome.price_ticker == benchmark_ticker
+    assert outcome.trading_date == "2025-06-17"
+    assert outcome.price_field is None
 
 
 def test_generate_article_label_records_duplicate_price_row() -> None:
@@ -142,6 +148,9 @@ def test_generate_article_label_records_duplicate_price_row() -> None:
 
     assert isinstance(outcome, ArticleLabelExclusion)
     assert outcome.reason == LabelExclusionReason.DUPLICATE_PRICE_ROW
+    assert outcome.price_ticker == "NVDA"
+    assert outcome.trading_date == "2025-06-17"
+    assert outcome.price_field is None
 
 
 def test_generate_article_label_ignores_unrelated_duplicate_price_row() -> None:
@@ -189,6 +198,9 @@ def test_generate_article_label_records_invalid_adjusted_close() -> None:
 
     assert isinstance(outcome, ArticleLabelExclusion)
     assert outcome.reason == LabelExclusionReason.INVALID_PRICE_ROW
+    assert outcome.price_ticker == "NVDA"
+    assert outcome.trading_date == "2025-06-17"
+    assert outcome.price_field == "adjusted_close"
 
 
 def test_generate_article_label_records_ambiguous_close_boundary() -> None:
@@ -221,6 +233,18 @@ def test_generate_article_label_rejects_naive_publication_time() -> None:
         article_id="article-1",
         ticker="NVDA",
         published_at_et=datetime(2025, 6, 18, 12),  # noqa: DTZ001
+        price_rows=make_price_rows(),
+    )
+
+    assert isinstance(outcome, ArticleLabelExclusion)
+    assert outcome.reason == LabelExclusionReason.INVALID_PUBLICATION_TIME
+
+
+def test_generate_article_label_rejects_missing_publication_time() -> None:
+    outcome = generate_article_label(
+        article_id="article-1",
+        ticker="NVDA",
+        published_at_et=None,  # type: ignore[arg-type]
         price_rows=make_price_rows(),
     )
 

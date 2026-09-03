@@ -16,6 +16,46 @@ ARTICLE_COLUMNS: tuple[str, ...] = (
     "ticker",
 )
 
+# Minimum contract for preparing articles before per-row label generation.
+LABEL_ARTICLE_INPUT_COLUMNS: tuple[str, ...] = (
+    "article_id",
+    "ticker",
+    "published_at_et",
+)
+
+BATCH_LABEL_SUCCESS_COLUMNS: tuple[str, ...] = (
+    "input_position",
+    "article_id",
+    "ticker",
+    "published_at_et",
+    "previous_confirmed_close_date",
+    "first_regular_session_date",
+    "previous_close",
+    "first_session_close",
+    "previous_adjusted_close",
+    "first_session_adjusted_close",
+    "label",
+    "stock_return",
+    "qqq_return",
+    "spy_return",
+    "excess_return_vs_qqq",
+    "excess_return_vs_spy",
+)
+
+BATCH_LABEL_EXCLUSION_COLUMNS: tuple[str, ...] = (
+    "input_position",
+    "article_id",
+    "ticker",
+    "published_at_et",
+    "reason",
+    "detail",
+    "previous_confirmed_close_date",
+    "first_regular_session_date",
+    "price_ticker",
+    "trading_date",
+    "price_field",
+)
+
 PRICE_COLUMNS: tuple[str, ...] = (
     "ticker",
     "trading_date",

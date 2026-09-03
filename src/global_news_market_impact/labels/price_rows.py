@@ -40,10 +40,12 @@ class PriceRowSelectionError(ValueError):
         *,
         ticker: str | None = None,
         trading_date: str | None = None,
+        price_field: str | None = None,
     ) -> None:
         self.reason = reason
         self.ticker = ticker
         self.trading_date = trading_date
+        self.price_field = price_field
         super().__init__(detail)
 
 
@@ -212,19 +214,40 @@ def _select_observation(
         )
 
     row = matching_rows.iloc[0]
-    try:
-        close = validate_positive_price("close", row["close"])
-        adjusted_close = validate_positive_price("adjusted_close", row["adjusted_close"])
-    except InvalidLabelPriceError as error:
-        raise PriceRowSelectionError(
-            PriceRowErrorReason.INVALID_PRICE_ROW,
-            f"invalid {ticker} price row for {trading_date_text}: {error}",
-            ticker=ticker,
-            trading_date=trading_date_text,
-        ) from error
+    close = _validate_price_field(
+        row,
+        price_field="close",
+        ticker=ticker,
+        trading_date=trading_date_text,
+    )
+    adjusted_close = _validate_price_field(
+        row,
+        price_field="adjusted_close",
+        ticker=ticker,
+        trading_date=trading_date_text,
+    )
 
     return PriceObservation(
         trading_date=trading_date_text,
         close=close,
         adjusted_close=adjusted_close,
     )
+
+
+def _validate_price_field(
+    row: pd.Series,
+    *,
+    price_field: str,
+    ticker: str,
+    trading_date: str,
+) -> float:
+    try:
+        return validate_positive_price(price_field, row[price_field])
+    except InvalidLabelPriceError as error:
+        raise PriceRowSelectionError(
+            PriceRowErrorReason.INVALID_PRICE_ROW,
+            f"invalid {ticker} price row for {trading_date}: {error}",
+            ticker=ticker,
+            trading_date=trading_date,
+            price_field=price_field,
+        ) from error

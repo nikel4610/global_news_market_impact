@@ -76,6 +76,9 @@ class ArticleLabelExclusion:
     detail: str
     previous_confirmed_close_date: str | None = None
     first_regular_session_date: str | None = None
+    price_ticker: str | None = None
+    trading_date: str | None = None
+    price_field: str | None = None
 
 
 ArticleLabelOutcome = ArticleLabelSuccess | ArticleLabelExclusion
@@ -111,6 +114,14 @@ def generate_article_label(
             ticker=normalized_ticker,
             reason=LabelExclusionReason.UNSUPPORTED_TICKER,
             detail=f"unsupported prediction ticker: {ticker}",
+        )
+
+    if not isinstance(published_at_et, datetime):
+        return ArticleLabelExclusion(
+            article_id=article_id,
+            ticker=normalized_ticker,
+            reason=LabelExclusionReason.INVALID_PUBLICATION_TIME,
+            detail="published_at_et must be a timezone-aware datetime",
         )
 
     try:
@@ -230,6 +241,9 @@ def _price_error_to_exclusion(
         detail=str(error),
         previous_confirmed_close_date=previous_confirmed_close_date,
         first_regular_session_date=first_regular_session_date,
+        price_ticker=error.ticker,
+        trading_date=error.trading_date,
+        price_field=error.price_field,
     )
 
 
