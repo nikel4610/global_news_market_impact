@@ -45,6 +45,14 @@ Use one-session simple returns for the stock, QQQ, and SPY. Keep stock-minus-QQQ
 
 Calculate benchmark-relative returns only when the stock, QQQ, and SPY price pairs have identical previous and first-session trading dates. Reject mismatched periods instead of shifting benchmark dates automatically.
 
+## Brokerage API Safety Boundary
+
+The Toss Securities integration is market-data-only. Never access or mutate the user's account, cash, holdings, positions, buying power, sellable quantities, commissions, orders, order history, or conditional orders. Never send the `X-Tossinvest-Account` header, request or store an `accountSeq`, or call account, asset, order, order-info, or conditional-order endpoints.
+
+The only approved Toss endpoints are `POST /oauth2/token` for short-lived authentication and read-only `GET /api/v1/stocks`, `GET /api/v1/candles`, and `GET /api/v1/market-calendar/US`. Do not broaden this allowlist without an explicit change to this safety boundary. Provider code and tests must reject any method or path outside the allowlist before sending a request.
+
+Never log, persist, display, or commit API credentials, access tokens, account identifiers, or personal financial data. Credentials may be read only from local environment variables and must be redacted from errors and reports.
+
 ## Data Inputs
 
 The MVP should use:
