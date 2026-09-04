@@ -5,10 +5,6 @@
 This repository analyzes whether major U.S. technology company news can predict the stock direction of the first regular trading session after the article is published.
 The MVP compares a news-only baseline model against models that also include pre-article market sentiment and major policy/economic event flags.
 
-## Core Research Question
-
-Can pre-article market sentiment and major policy/economic event context improve prediction of whether the stock closes higher in the first regular session after the article?
-
 ## MVP Scope
 
 Only work on the initial MVP unless explicitly asked to expand scope.
@@ -23,35 +19,59 @@ The MVP tickers are:
 * GOOGL
 * TSLA
 
-Do not add META, AMZN, WMT, COST, intraday price bars or other intraday price datasets, broker API integration, or real-time prediction unless the user explicitly asks for expansion after the MVP is working. Classifying an article by its intraday publication timestamp is still required.
+Do not add META, AMZN, WMT, COST, intraday price bars, or real-time prediction unless the user
+explicitly asks for expansion after the MVP is working. Broker account or trading integration is
+not an expansion candidate and remains prohibited. Read-only public market-data access is allowed
+only under the Brokerage API Safety Boundary. Classifying an article by its intraday publication
+timestamp is still required.
 
 ## Market Benchmarks
 
-Use `QQQ` as the Nasdaq-100 ETF benchmark and `SPY` as the S&P 500 ETF benchmark. They are market comparison series, not additions to the eight-company prediction universe and not initial model features.
+* Use `QQQ` for Nasdaq-100 and `SPY` for S&P 500 comparison. They are not prediction tickers or
+  initial model features.
+* Keep stock, QQQ, and SPY one-session returns and both stock-minus-benchmark excess returns as
+  evaluation fields, never model features or replacements for the binary target.
+* Require identical previous and first-session dates across all three price pairs. Reject mismatches
+  instead of shifting benchmark dates.
 
-Keep raw `close` values for audit. Use `adjusted_close` for price-direction labels and later benchmark-relative return calculations so stock splits and distributions do not create false price moves. Confirm the selected provider's adjustment method before using real data.
+## Label Data Contracts
 
-Normalize a price table once and reuse the prepared result across stock and benchmark lookups. A duplicate should exclude an article only when the requested `(ticker, trading_date)` key is ambiguous; unrelated duplicate keys belong in batch data-quality reporting and must not block another article.
-
-Prepare article rows against the minimum `article_id`, `ticker`, and `published_at_et` contract while preserving input order and additional source columns. Require a non-empty, unique normalized `article_id` because missing or duplicate IDs break traceability. Keep unsupported tickers and invalid publication timestamps as per-article exclusion outcomes instead of failing the whole prepared table.
-
-Structured price exclusions must preserve the affected `price_ticker`, `trading_date`, and, when applicable, `price_field`; do not require downstream reporting to parse these values from a human-readable detail string.
-
-Batch labeling must prepare article and price tables once, preserve a zero-based `input_position`, and return separate success and exclusion tables with stable schemas. Keep source article text in the prepared article table and join it later by `article_id`; do not copy title or summary into label-only output tables.
-
-Treat daily `trading_date` as an exchange-session date. Accept dates, ISO date strings, and timezone-naive midnight datetimes; reject timezone-aware datetimes instead of converting or truncating them.
-
-Use one-session simple returns for the stock, QQQ, and SPY. Keep stock-minus-QQQ and stock-minus-SPY excess returns as separate evaluation fields. Do not use these future-return values as model features or replace the initial `up` / `not_up` target without explicit approval.
-
-Calculate benchmark-relative returns only when the stock, QQQ, and SPY price pairs have identical previous and first-session trading dates. Reject mismatched periods instead of shifting benchmark dates automatically.
+* Preserve raw `close` for audit; use `adjusted_close` for labels and benchmark returns. Confirm the
+  provider's adjustment method before real-data labeling.
+* Normalize each price table once. Reject only a duplicate requested `(ticker, trading_date)` key;
+  report unrelated duplicate keys as batch data-quality issues.
+* Require `article_id`, `ticker`, and `published_at_et`, preserving row order and extra columns.
+  Reject missing or duplicate normalized article IDs; keep bad tickers and times as row exclusions.
+* Store `price_ticker`, `trading_date`, and optional `price_field` on structured price exclusions.
+* Prepare article and price tables once per batch. Return stable, separate success and exclusion
+  tables with zero-based `input_position`; join source text later by `article_id`.
+* Treat `trading_date` as an exchange-session date. Accept dates, ISO strings, or timezone-naive
+  midnight datetimes; reject timezone-aware datetimes instead of truncating them.
 
 ## Brokerage API Safety Boundary
 
-The Toss Securities integration is market-data-only. Never access or mutate the user's account, cash, holdings, positions, buying power, sellable quantities, commissions, orders, order history, or conditional orders. Never send the `X-Tossinvest-Account` header, request or store an `accountSeq`, or call account, asset, order, order-info, or conditional-order endpoints.
+The Toss Securities integration is market-data-only. The sole approved origin is
+`https://openapi.tossinvest.com`, with these method and path pairs:
 
-The only approved Toss endpoints are `POST /oauth2/token` for short-lived authentication and read-only `GET /api/v1/stocks`, `GET /api/v1/candles`, and `GET /api/v1/market-calendar/US`. Do not broaden this allowlist without an explicit change to this safety boundary. Provider code and tests must reject any method or path outside the allowlist before sending a request.
+* `POST /oauth2/token` for short-lived authentication
+* `GET /api/v1/stocks`
+* `GET /api/v1/candles`
+* `GET /api/v1/market-calendar/US`
 
-Never log, persist, display, or commit API credentials, access tokens, account identifiers, or personal financial data. Credentials may be read only from local environment variables and must be redacted from errors and reports.
+Reject any other method, path, or origin before sending a request. Never forward credentials across
+a redirect or send `Authorization` to another origin. Never access, read, collect, or mutate:
+
+* brokerage accounts or account identifiers
+* cash, balances, buying power, or commissions
+* holdings, positions, or sellable quantities
+* orders, executions, order history, or conditional orders
+
+Never send `X-Tossinvest-Account`, request or store `accountSeq`, or probe account, asset, order,
+order-info, or conditional-order endpoints. Stop on requests for those capabilities.
+
+Read credentials only from local environment variables and keep access tokens in memory. Never log,
+display, persist, or commit credentials, tokens, account identifiers, or personal financial data;
+redact credentials and tokens from errors and reports.
 
 ## Data Inputs
 
@@ -141,24 +161,9 @@ Do not use revision text or summary changes that were not available at `publishe
 
 ## Modeling Rules
 
-Start simple.
-Treat the following as dependency order for components that are not implemented yet, not as a statement of current progress. Before starting work, inspect the current code, tests, and relevant design notes instead of repeating or skipping work based only on this list.
-
-Dependency order:
-
-1. data schema
-2. news collection feasibility sample
-3. price data collection
-4. timestamp normalization
-5. label generation
-6. baseline news-only model
-7. sentiment-added model
-8. event-flag-added model
-9. time-based evaluation comparison
-
-Use time-based train/validation/test splits.
-Prefer interpretability over complex models during MVP.
-Report Accuracy, Macro F1, and probability calibration/reliability when possible.
+Inspect current code, tests, README, and design notes before choosing the next incomplete step.
+Start with simple, interpretable models; use time-based train/validation/test splits and report
+Accuracy, Macro F1, and probability calibration or reliability when possible.
 
 ## Code Style
 
@@ -205,6 +210,7 @@ Always prioritize tests for:
 * no future sentiment leakage
 * ticker matching
 * duplicate article handling
+* Toss allowlist enforcement, account-header rejection, and credential redaction
 
 ## Validation Workflow
 
@@ -232,7 +238,7 @@ When explaining work:
 ## Do Not
 
 * Do not expand the ticker universe before MVP completion.
-* Do not introduce real-time trading or broker API features.
+* Do not introduce real-time trading or broker account and trading features.
 * Do not treat model output as financial advice.
 * Do not optimize for high accuracy by leaking future information.
 * Do not add heavy infrastructure before a working data pipeline exists.
