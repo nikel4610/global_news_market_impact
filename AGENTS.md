@@ -2,8 +2,9 @@
 
 ## Project Purpose
 
-This repository analyzes whether major U.S. technology company news can predict the stock direction of the first regular trading session after the article is published.
-The MVP compares a news-only baseline model against models that also include pre-article market sentiment and major policy/economic event flags.
+Analyze keywords, phrases, event types, and context in historical U.S. technology-company news, then visualize subsequent stock-return distributions and source articles.
+The direction changed on 2026-09-07 from predictive-model training to descriptive analysis and visualization. Model training and model-performance comparison are not current MVP tasks.
+The MVP delivers a historical analysis explorer. New-article input and similar-case retrieval are follow-up work after data quality and later-period validation. Never present historical up rates as validated future probabilities or associations as causal effects.
 
 ## MVP Scope
 
@@ -27,12 +28,10 @@ timestamp is still required.
 
 ## Market Benchmarks
 
-* Use `QQQ` for Nasdaq-100 and `SPY` for S&P 500 comparison. They are not prediction tickers or
-  initial model features.
-* Keep stock, QQQ, and SPY one-session returns and both stock-minus-benchmark excess returns as
-  evaluation fields, never model features or replacements for the binary target.
-* Require identical previous and first-session dates across all three price pairs. Reject mismatches
-  instead of shifting benchmark dates.
+* Use `QQQ` and `SPY` as comparison benchmarks, not additional analysis tickers.
+* Keep stock, QQQ, and SPY returns and both stock-minus-benchmark excess returns as separate analysis outcomes. Preserve existing feature-leakage guards.
+* Continuous returns and distributions are primary analysis results; the existing binary label is an auxiliary historical summary, not a required modeling target.
+* Require identical return-window dates across stock and benchmark price pairs. Reject mismatches instead of shifting benchmark dates.
 
 ## Label Data Contracts
 
@@ -75,25 +74,16 @@ redact credentials and tokens from errors and reports.
 
 ## Data Inputs
 
-The MVP should use:
+The initial analysis requires article IDs, titles, summaries, source URLs, sources, related tickers, original publication timestamps with timezones, and stock/QQQ/SPY daily prices.
+Distinguish original, revised, and collected timestamps and check whether text was available at original publication. Flag retrospective price-move commentary.
+Pattern categories, phrase rules, grouping evidence, and event groups will be designed from actual samples; do not invent a finalized schema now.
+Separate sentiment and macro-event ingestion/availability joins are deferred until needed after basic pattern analysis. Preserve the existing `TARIFF_POLICY`, `FOMC`, `CPI`, and `EMPLOYMENT` constants; they are not the finalized news-pattern taxonomy.
 
-* article title
-* article summary
-* related ticker
-* original article published timestamp
-* market sentiment value available before the article
-* major policy/economic event flag from the previous 24 hours
-
-The initial event types are:
-
-* TARIFF_POLICY
-* FOMC
-* CPI
-* EMPLOYMENT
+The 2026-09-04 sample-validation record selected Tiingo as primary for split- and cash-distribution-adjusted EOD prices; Toss is only a small public-data cross-check. No Tiingo adapter or full real dataset exists yet. Parse the provider date portion as `trading_date`, without timezone-shifting it. Enforce allowed hosts/paths and token redaction before implementing requests. Keep raw provider data out of Git and public displays under its usage terms.
 
 ## Label Definition
 
-The initial label is:
+These are existing code contracts, not a final definition of the new event-study window. Preserve them until a separately scoped implementation change. The existing label is:
 
 * `up`: the first regular-session adjusted close after the article is higher than the last confirmed adjusted close before the article
 * `not_up`: both adjusted closes are valid and the first regular-session adjusted close is equal to or lower than the last confirmed adjusted close
@@ -113,9 +103,15 @@ On early-close days, use the actual regular-session close time from the `XNYS` s
 Keep explicit calendar bounds that cover the MVP collection window. Expand them deliberately if the approved data period moves outside 2020-2030.
 Do not classify sessions using naive local dates alone.
 
+## Analysis Windows
+
+An intraday article's previous-close to same-day-close return includes pre-article movement; never call it a pure post-article response.
+The initial direction is after-close to next-open news. Final inclusion of weekends/holidays, exact boundaries, return horizons, event-relative windows, minimum sample sizes, and interval estimators remain open until sample review.
+Separate previous-close to next-close from next-open to close returns. Match adjustment bases when using opens; do not assume a reference price was executable at article time.
+
 ## Critical Rule: Prevent Data Leakage
 
-Never use information that would not have been available at the article published time.
+Never use information unavailable at article publication to define article-time context or patterns. Future prices are measured outcomes only, and must stay separate from pattern inputs.
 Do not use:
 
 * article revisions after the original publish time
@@ -159,11 +155,17 @@ Do not merge articles only because their titles are similar.
 Treat article revisions as the same article only when the original published timestamp is preserved.
 Do not use revision text or summary changes that were not available at `published_at_original`.
 
-## Modeling Rules
+## Event Grouping
+
+Article deduplication and grouping different articles about one event are separate operations. Preserve source articles and IDs. Do not count repeated coverage as independent events; report article and event counts separately and flag overlapping events in the same stock/return window. Final grouping rules require sample review.
+
+## Analysis and Visualization Rules
 
 Inspect current code, tests, README, and design notes before choosing the next incomplete step.
-Start with simple, interpretable models; use time-based train/validation/test splits and report
-Accuracy, Macro F1, and probability calibration or reliability when possible.
+Start with manually checked, explicit keyword/phrase/event rules. Discover patterns in an earlier period, then freeze classification and aggregation rules for later-period validation.
+Record candidates and exclusions, including counterexamples; avoid reporting only favorable patterns. Compare basic stock up rates and market-relative returns with sample sizes and uncertainty. Do not silently choose thresholds or intervals before the analysis-design step.
+Plan four views: keyword/phrase trends, event-type return distributions, event-relative cumulative returns, and source-article/price case exploration. Display periods, article/event counts, exclusions, and window definitions; support stock versus QQQ/SPY-relative views. Do not fabricate measured results or claim unimplemented charts exist.
+Next: news feasibility and samples -> classification/grouping/window design -> Tiingo ingestion and analysis dataset -> statistics and later-period validation -> visualization. Do not resume the old training plan.
 
 ## Code Style
 
@@ -185,10 +187,10 @@ Prefer this structure when creating files:
 
 * `src/global_news_market_impact/config/`: constants, ticker lists, event type definitions
 * `src/global_news_market_impact/data/`: data collection and raw data loading
-* `src/global_news_market_impact/features/`: timestamp joins, sentiment/event features
+* `src/global_news_market_impact/features/`: article pattern processing; sentiment/event joins deferred
 * `src/global_news_market_impact/labels/`: label generation
-* `src/global_news_market_impact/models/`: baseline and comparison models
-* `src/global_news_market_impact/evaluation/`: metrics and time-based validation
+* `src/global_news_market_impact/models/`: existing placeholder; training deferred
+* `src/global_news_market_impact/evaluation/`: return statistics and later-period validation
 * `tests/`: unit tests for time logic, joins, and labels
 * `notebooks/`: exploration only, not production logic
 * `data/raw/`: raw data, ignored by git when large
@@ -209,7 +211,8 @@ Always prioritize tests for:
 * no future event leakage
 * no future sentiment leakage
 * ticker matching
-* duplicate article handling
+* duplicate article handling and independent event grouping when implemented
+* return-window alignment and pattern-input/outcome separation
 * Toss allowlist enforcement, account-header rejection, and credential redaction
 
 ## Validation Workflow
@@ -233,12 +236,12 @@ When explaining work:
 * Mention the files actually changed. For review-only work, state that no files were changed.
 * Keep MVP scope small.
 * Warn clearly when a proposed change may introduce data leakage.
-* Do not suggest investment decisions based on model output.
+* Do not suggest investment decisions based on analysis output.
 
 ## Do Not
 
 * Do not expand the ticker universe before MVP completion.
 * Do not introduce real-time trading or broker account and trading features.
-* Do not treat model output as financial advice.
-* Do not optimize for high accuracy by leaking future information.
+* Do not treat analysis output as financial advice.
+* Do not select favorable patterns by leaking future information.
 * Do not add heavy infrastructure before a working data pipeline exists.

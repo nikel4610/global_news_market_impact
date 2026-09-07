@@ -2,25 +2,19 @@
 
 ## MVP Focus
 
-The MVP tests whether adding pre-article market sentiment and major policy or economic event flags improves prediction over a news-only baseline.
+As of 2026-09-07, the MVP analyzes historical news keywords, phrases, event types, and context against subsequent stock returns, and presents the evidence in an interactive historical explorer. Predictive-model training/comparison and sentiment/macro-event joins are deferred.
 
-The first implementation should avoid model complexity and focus on:
-
-1. Data schema.
-2. Timestamp normalization.
-3. Market-session selection.
-4. Label generation.
-5. Leakage-safe feature joins.
+The four planned views are keyword/phrase trends, event-type return distributions, event-relative cumulative returns, and source-article/price case exploration. Show stock and QQQ/SPY-relative returns, periods, article counts, event counts, exclusions, observation definitions, and uncertainty. New-article input and similar-case retrieval are follow-up work after validation; historical up rates are not validated future probabilities.
 
 ## Current Guardrails
 
 - Use only the MVP tickers defined in `src/global_news_market_impact/config/tickers.py`.
-- Use only the MVP event types defined in `src/global_news_market_impact/config/events.py`.
-- Keep QQQ and SPY as Nasdaq-100 and S&P 500 comparison benchmarks, not model features.
+- Preserve the existing macro-event constants in `src/global_news_market_impact/config/events.py`; separate macro-event ingestion is deferred. News-pattern categories will be designed from samples.
+- Keep QQQ and SPY as comparison benchmarks. Continuous returns and distributions are primary outcomes; the existing binary label is an auxiliary historical summary.
 - Normalize analysis timestamps to U.S. Eastern Time.
 - Use an exchange calendar for U.S. market holidays and early closes.
 - Compare exact timestamps, not only dates.
-- Do not use data that was unavailable at `published_at_original`.
+- Do not use data unavailable at `published_at_original` to define article-time context or patterns. Future prices are outcomes only. Observed associations do not establish causal impact.
 
 ## Current Status
 
@@ -45,10 +39,37 @@ Not implemented:
 
 - Real-provider price ingestion, batch label output, and exclusion-reason aggregation.
 - Runtime timestamp normalization and availability-safe joins.
-- News, price, sentiment, and event provider feasibility validation or collection.
-- Model training, time-based evaluation, and experiment reporting.
+- News feasibility and full collection, independent event grouping, and phrase/event classification.
+- Pattern statistics, later-period validation, multi-session event-relative returns, and visualization.
 
-## Initial Implementation Plan
+Deferred: predictive-model training/comparison and sentiment/macro-event collection and joins. Preserve existing schema guards and tests.
+
+The 2026-09-04 Vault sample-validation record selected Tiingo for split and cash-distribution adjustment; Toss remains a small public-data cross-check. This does not imply adapter implementation or full dataset collection. Parse Tiingo's provider date portion as the session date, enforce host/path allowlisting and token masking, and keep raw provider data out of Git/public screens under its usage terms. All account and trading access remains prohibited under `AGENTS.md`.
+
+## Current Analysis Plan
+
+1. Check recent two-year news availability and small samples for the existing eight tickers: original text/timestamps, source/URL, revisions, coverage, repeated events, and retrospective market commentary.
+2. Define manually checked phrase/event rules, grouping criteria, analysis windows, comparisons, earlier discovery and later validation periods.
+3. Connect Tiingo prices, preserve structured exclusions, and build an auditable analysis dataset.
+4. Calculate pattern frequency, return distributions, basic up-rate comparisons, benchmark-relative results, uncertainty, and counterexamples. Freeze rules before later-period validation and record attempted candidates to avoid favorable-pattern selection.
+5. Implement the four visualization views with links from aggregates to source evidence.
+
+Article deduplication differs from grouping coverage of the same event. Keep article IDs and originals, count independent events separately, and flag overlapping events in the same stock/return window.
+
+### Observation decisions still open
+
+- The initial direction is after-close to next-open news; exact boundaries and weekend/holiday inclusion require samples.
+- Existing intraday previous-close to same-day-close returns include pre-article movement and cannot represent pure post-article response.
+- Separate previous-close to next-close from next-open to close. Match adjustment bases if using opens and do not assume a reference price was executable at publication.
+- Event-relative horizons, cumulative-return formulas, category lists, grouping rules, minimum sample sizes, and interval estimators are not finalized.
+
+### Reuse and implementation boundary
+
+Reuse calendars, price validation, article IDs/order, stable batch success/exclusions, benchmark alignment, and one-window adjusted returns. Revisit sample eligibility, observation windows, and analysis output schemas only after the design step. Grouping, classification, multi-session returns, and visualization require new implementation. This documentation change does not alter source code or tests.
+
+## Previous Implementation Plan
+
+The plan below records the pre-2026-09-07 foundation design. It is not the current execution order. Completed contracts remain valid; the old join work is deferred and feasibility now precedes additional implementation.
 
 ### Step 1: Schema and constants
 
